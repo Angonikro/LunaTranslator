@@ -1,6 +1,7 @@
 # Changelog
 
 ## 0.2.17
+- Überschrift „LunaTranslator“ in der Seitenleiste verkleinert, damit der vollständige Programmname auch bei der festen Seitenleistenbreite sichtbar bleibt.
 - Schaltflächen im Einstellungsdialog fest auf Deutsch gesetzt: „Speichern“ und „Abbrechen“.
 - Änderungsprotokoll vollständig ins Deutsche übertragen; technische Bezeichnungen und Programmnamen bleiben unverändert.
 

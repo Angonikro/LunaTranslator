@@ -9,7 +9,7 @@ LunaTranslator ist eine grafische Übersetzungsanwendung für Debian 13 (Trixie)
 
 Beide Dienste können in der Anwendung separat ausgewählt werden. Bei Fehlern von MyMemory wird **nicht automatisch auf Google gewechselt**.
 
-![LunaTranslator](lunatranslator.png)
+![LunaTranslator](lunatranslator1.png)
 
 [Github Seite](https://github.com/Angonikro/LunaTranslator/)
 
