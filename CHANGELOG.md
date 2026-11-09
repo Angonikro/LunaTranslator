@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.18
+- Zweisprachige Benutzeroberfläche auf Deutsch und Englisch ergänzt.
+- Sprachumschaltung über das Menü „Sprache / Language“; Auswahl wird in den Einstellungen gespeichert.
+- Beschriftungen, Navigation, Übersetzungsansicht, Verlauf, Einstellungen und Bearbeitungskontextmenüs werden entsprechend der UI-Sprache angezeigt.
+- Die gewählte UI-Sprache ist unabhängig von Quell- und Zielsprache der Übersetzung.
+
 ## 0.2.17
 - Überschrift „LunaTranslator“ in der Seitenleiste verkleinert, damit der vollständige Programmname auch bei der festen Seitenleistenbreite sichtbar bleibt.
 - Schaltflächen im Einstellungsdialog fest auf Deutsch gesetzt: „Speichern“ und „Abbrechen“.

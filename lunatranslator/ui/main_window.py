@@ -1,5 +1,5 @@
 from PySide6.QtCore import Qt, QObject, Signal, QRunnable, QThreadPool
-from PySide6.QtGui import QAction, QFont
+from PySide6.QtGui import QAction, QActionGroup, QFont
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QLabel,
     QPushButton, QComboBox, QPlainTextEdit, QStackedWidget, QListWidget,
@@ -25,7 +25,101 @@ QComboBox QAbstractItemView { background: #1c222a; selection-background-color: #
 QLabel#muted { color: #a5afbf; }
 QProgressBar { border: 1px solid #414b5a; border-radius: 5px; text-align: center; }
 QProgressBar::chunk { background: #526de5; border-radius: 4px; }
+
 """
+
+# UI language is independent from the source/target translation languages.
+CURRENT_LANGUAGE = "de"
+TRANSLATIONS = {
+    "Übersetzen": "Translate", "Verlauf": "History", "Einstellungen": "Settings",
+    "Beenden": "Quit", "Einstellungen öffnen": "Open settings",
+    "Textübersetzung": "Text translation",
+    "Google und MyMemory für Online-Übersetzung sowie MBROLA-Sprachausgabe.": "Google and MyMemory online translation with MBROLA text-to-speech.",
+    "Von": "From", "Nach": "To", "Text zum Übersetzen eingeben …": "Enter text to translate …",
+    "Die Übersetzung erscheint hier …": "The translation will appear here …",
+    "QUELLTEXT": "SOURCE TEXT", "ÜBERSETZUNG": "TRANSLATION",
+    "Vorlesen": "Read aloud", "Stopp": "Stop",
+    "Verwendetes Modul: wird bei Vorlesen angezeigt": "Voice module used: shown during playback",
+    "MBROLA-Stimme": "MBROLA voice", "🎙 Spracheingabe starten": "🎙 Start voice input",
+    "Mikrofon bereit · Online-Spracherkennung": "Microphone ready · Online speech recognition",
+    "Bereit": "Ready", "Ergebnis kopieren": "Copy result", "Leeren": "Clear",
+    "Übersetzungsverlauf": "Translation history", "Verlauf durchsuchen …": "Search history …",
+    "Verlauf löschen": "Clear history", "Automatisch nach Zielsprache": "Automatic for target language",
+    "Einstellungen": "Settings", "Übersetzungsdienst": "Translation service",
+    "Google Übersetzer": "Google Translate", "MyMemory Kontakt-E-Mail (optional)": "MyMemory contact email (optional)",
+    "Optional – erhöht das Tageslimit": "Optional – increases the daily limit",
+    "Automatisch passend zur Zielsprache": "Automatic for target language",
+    "Audiotreiber": "Audio backend", "Soundkarte / Ausgabe": "Sound card / output",
+    "Mikrofon / Eingabe": "Microphone / input",
+    "Keine MBROLA-Stimmen erkannt. Installiere eSpeak NG und MBROLA-Stimmen. Die automatische Sprachausgabe kann ersatzweise die native eSpeak-NG-Stimme verwenden.": "No MBROLA voices detected. Install eSpeak NG and MBROLA voices. Automatic speech output can use the native eSpeak NG voice as a fallback.",
+    "MBROLA-Module neu erkennen": "Rescan MBROLA modules",
+    "Speichern": "Save", "Abbrechen": "Cancel",
+    "Datei": "File", "Sprache": "Language", "Deutsch": "German", "Englisch": "English",
+    "Bitte zuerst einen Text übersetzen.": "Please translate some text first.",
+    "Sprachausgabe läuft …": "Text-to-speech is running …",
+    "Verwendetes Modul: wird ermittelt …": "Voice module used: detecting …",
+    "Vorlesen abgeschlossen": "Read aloud completed",
+    "Sprachausgabe nicht verfügbar": "Text-to-speech unavailable",
+    "MBROLA – Vorlesefehler": "MBROLA – playback error",
+    "Sprachausgabe gestoppt": "Text-to-speech stopped",
+    "Spracheingabe": "Voice input", "■ Aufnahme stoppen": "■ Stop recording",
+    "Mikrofonaufnahme läuft …": "Microphone recording …",
+    "Aufnahme wird verarbeitet …": "Processing recording …",
+    "Sprache erkannt · Text ins Quelltextfeld übernommen": "Speech recognized · text added to source field",
+    "Spracheingabe abgeschlossen": "Voice input completed",
+    "Spracheingabe fehlgeschlagen": "Voice input failed",
+    "Spracherkennung fehlgeschlagen": "Speech recognition failed",
+    "Spracheinstellungen konnten nicht gespeichert werden: ": "Language settings could not be saved: ",
+    "MBROLA-Einstellung konnte nicht gespeichert werden: ": "MBROLA setting could not be saved: ",
+    "Bitte zuerst einen Text eingeben.": "Please enter some text first.",
+    "Übersetzung läuft …": "Translating …", "Übersetzung abgeschlossen": "Translation completed",
+    "Übersetzung fehlgeschlagen": "Translation failed",
+    "Übersetzungsfehler": "Translation error",
+    "Übersetzt; Verlauf konnte nicht gespeichert werden: ": "Translated; could not save history: ",
+    "Möchtest du den gesamten Übersetzungsverlauf löschen?": "Do you want to delete the entire translation history?",
+    "Einstellungen gespeichert": "Settings saved",
+    "Rückgängig": "Undo", "Wiederholen": "Redo", "Ausschneiden": "Cut",
+    "Kopieren": "Copy", "Einfügen": "Paste", "Löschen": "Delete",
+    "Alles auswählen": "Select all",
+}
+
+def tr(text):
+    if CURRENT_LANGUAGE != "en":
+        return text
+    # Qt labels sometimes contain padding spaces (for example sidebar buttons).
+    # Translate the visible text while preserving that layout whitespace.
+    if not isinstance(text, str):
+        return text
+    stripped = text.strip()
+    if not stripped:
+        return text
+    translated = TRANSLATIONS.get(stripped, stripped)
+    if translated == stripped:
+        return text
+    leading = text[:len(text) - len(text.lstrip())]
+    trailing = text[len(text.rstrip()):]
+    return leading + translated + trailing
+
+def translate_widget_tree(widget):
+    # Translate visible labels, menu actions, placeholders and combo-box entries.
+    from PySide6.QtWidgets import QComboBox
+    for child in widget.findChildren(QWidget):
+        if hasattr(child, "text") and callable(child.text):
+            value = child.text()
+            translated = tr(value)
+            if translated != value and hasattr(child, "setText"):
+                child.setText(translated)
+        if hasattr(child, "placeholderText") and callable(child.placeholderText):
+            value = child.placeholderText()
+            translated = tr(value)
+            if translated != value:
+                child.setPlaceholderText(translated)
+        if isinstance(child, QComboBox):
+            for i in range(child.count()):
+                value = child.itemText(i)
+                translated = tr(value)
+                if translated != value:
+                    child.setItemText(i, translated)
 
 
 class GermanContextMenuMixin:
@@ -35,15 +129,15 @@ class GermanContextMenuMixin:
         menu = QMenu(self)
         menu.setStyleSheet(STYLE)
         actions = [
-            ("Rückgängig", "undo"),
-            ("Wiederholen", "redo"),
+            (tr("Rückgängig"), "undo"),
+            (tr("Wiederholen"), "redo"),
             (None, None),
-            ("Ausschneiden", "cut"),
-            ("Kopieren", "copy"),
-            ("Einfügen", "paste"),
-            ("Löschen", "delete"),
+            (tr("Ausschneiden"), "cut"),
+            (tr("Kopieren"), "copy"),
+            (tr("Einfügen"), "paste"),
+            (tr("Löschen"), "delete"),
             (None, None),
-            ("Alles auswählen", "selectAll"),
+            (tr("Alles auswählen"), "selectAll"),
         ]
         for label, method in actions:
             if label is None:
@@ -104,7 +198,7 @@ class Worker(QRunnable):
 class SettingsDialog(QDialog):
     def __init__(self, settings, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Einstellungen")
+        self.setWindowTitle(tr("Einstellungen"))
         self.settings = dict(settings)
         self.mbrola_voices = discover_mbrola_voices()
         form = QFormLayout(self)
@@ -188,6 +282,7 @@ class SettingsDialog(QDialog):
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
         form.addRow(buttons)
+        translate_widget_tree(self)
 
     def _refresh_audio_devices(self):
         backend = self.audio_backend.currentData() or "auto"
@@ -242,6 +337,8 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.settings = load_settings()
+        global CURRENT_LANGUAGE
+        CURRENT_LANGUAGE = self.settings.get("language", "de") if self.settings.get("language") in ("de", "en") else "de"
         self.history = History()
         self.pool = QThreadPool.globalInstance()
         # Keep Python wrappers alive while QRunnable instances execute.
@@ -255,6 +352,7 @@ class MainWindow(QMainWindow):
         self.setStyleSheet(STYLE)
         self._build_ui()
         self._build_menu()
+        translate_widget_tree(self)
         # Keep the last selected language pair across restarts, even if the
         # application is closed without performing a translation.
         self.source_lang.currentTextChanged.connect(self.save_language_selection)
@@ -296,14 +394,41 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(root)
 
     def _build_menu(self):
-        settings_menu = self.menuBar().addMenu("Datei")
-        quit_action = QAction("Beenden", self)
+        settings_menu = self.menuBar().addMenu(tr("Datei"))
+        quit_action = QAction(tr("Beenden"), self)
         quit_action.triggered.connect(self.close)
         settings_menu.addAction(quit_action)
-        menu = self.menuBar().addMenu("Einstellungen")
-        action = QAction("Einstellungen öffnen", self)
+        menu = self.menuBar().addMenu(tr("Einstellungen"))
+        action = QAction(tr("Einstellungen öffnen"), self)
         action.triggered.connect(self.open_settings)
         menu.addAction(action)
+        language_menu = self.menuBar().addMenu(tr("Sprache") + " / Language")
+        language_group = QActionGroup(self)
+        language_group.setExclusive(True)
+        for code, label in (("de", "Deutsch"), ("en", "English")):
+            language_action = QAction(label, self, checkable=True)
+            language_action.setChecked(self.settings.get("language", "de") == code)
+            language_action.triggered.connect(lambda checked=False, value=code: self.change_ui_language(value))
+            language_group.addAction(language_action)
+            language_menu.addAction(language_action)
+
+    def change_ui_language(self, language):
+        if language not in ("de", "en") or language == self.settings.get("language", "de"):
+            return
+        self.settings["language"] = language
+        save_settings(self.settings)
+        global CURRENT_LANGUAGE
+        CURRENT_LANGUAGE = language
+        # Rebuild the pages so every label and menu uses the selected language.
+        old = self.takeCentralWidget()
+        if old:
+            old.deleteLater()
+        self._build_ui()
+        self.menuBar().clear()
+        self._build_menu()
+        translate_widget_tree(self)
+        self.source_lang.currentTextChanged.connect(self.save_language_selection)
+        self.target_lang.currentTextChanged.connect(self.save_language_selection)
 
     def _translation_page(self):
         page = QWidget()
@@ -445,12 +570,12 @@ class MainWindow(QMainWindow):
     def speak_translation(self):
         text = self.output_text.toPlainText().strip()
         if not text:
-            QMessageBox.information(self, "Vorlesen", "Bitte zuerst einen Text übersetzen.")
+            QMessageBox.information(self, tr("Vorlesen"), tr("Bitte zuerst einen Text übersetzen."))
             return
         language = self.target_lang.currentText()
         voice = self.speech_voice.currentData() or "auto"
         self.speak_button.setEnabled(False)
-        self.status.setText("Sprachausgabe läuft …")
+        self.status.setText(tr("Sprachausgabe läuft …"))
         backend = self.settings.get("audio_backend", "auto")
         device = self.settings.get("audio_device", "")
         self.speech_module_label.setText("Verwendetes Modul: wird ermittelt …")
@@ -464,17 +589,17 @@ class MainWindow(QMainWindow):
     def _speech_done(self, module_info):
         self.speak_button.setEnabled(True)
         self.speech_module_label.setText(f"Verwendetes Modul: {module_info}")
-        self.status.setText("Vorlesen abgeschlossen")
+        self.status.setText(tr("Vorlesen abgeschlossen"))
 
     def _speech_error(self, message):
         self.speak_button.setEnabled(True)
-        self.status.setText("Sprachausgabe nicht verfügbar")
+        self.status.setText(tr("Sprachausgabe nicht verfügbar"))
         QMessageBox.warning(self, "MBROLA – Vorlesefehler", message)
 
     def stop_speech(self):
         self.speech.stop()
         self.speak_button.setEnabled(True)
-        self.status.setText("Sprachausgabe gestoppt")
+        self.status.setText(tr("Sprachausgabe gestoppt"))
 
     def toggle_recording(self):
         if not self.recording:
@@ -482,23 +607,23 @@ class MainWindow(QMainWindow):
             try:
                 message = self.speech_input.start(device=device)
             except Exception as exc:
-                QMessageBox.warning(self, "Spracheingabe", str(exc))
+                QMessageBox.warning(self, tr("Spracheingabe"), str(exc))
                 return
             self.recording = True
             self.record_button.setText("■ Aufnahme stoppen")
             self.record_status.setText(message)
-            self.status.setText("Mikrofonaufnahme läuft …")
+            self.status.setText(tr("Mikrofonaufnahme läuft …"))
             return
 
         self.record_button.setEnabled(False)
-        self.record_status.setText("Aufnahme wird verarbeitet …")
+        self.record_status.setText(tr("Aufnahme wird verarbeitet …"))
         try:
             audio_data = self.speech_input.stop()
         except Exception as exc:
             self.recording = False
             self.record_button.setEnabled(True)
             self.record_button.setText("🎙 Spracheingabe starten")
-            QMessageBox.warning(self, "Spracheingabe", str(exc))
+            QMessageBox.warning(self, tr("Spracheingabe"), str(exc))
             return
         self.recording = False
         self.record_button.setText("🎙 Spracheingabe starten")
@@ -515,12 +640,12 @@ class MainWindow(QMainWindow):
         self.input_text.setPlainText(recognized_text)
         self.input_text.setFocus()
         self.record_status.setText("Sprache erkannt · Text ins Quelltextfeld übernommen")
-        self.status.setText("Spracheingabe abgeschlossen")
+        self.status.setText(tr("Spracheingabe abgeschlossen"))
 
     def _speech_input_error(self, message):
         self.record_button.setEnabled(True)
-        self.record_status.setText("Spracheingabe fehlgeschlagen")
-        self.status.setText("Spracherkennung fehlgeschlagen")
+        self.record_status.setText(tr("Spracheingabe fehlgeschlagen"))
+        self.status.setText(tr("Spracherkennung fehlgeschlagen"))
         QMessageBox.warning(self, "Spracheingabe", message)
 
     def save_language_selection(self, *_args):
@@ -556,14 +681,14 @@ class MainWindow(QMainWindow):
     def translate(self):
         text = self.input_text.toPlainText().strip()
         if not text:
-            QMessageBox.information(self, "LunaTranslator", "Bitte zuerst einen Text eingeben.")
+            QMessageBox.information(self, "LunaTranslator", tr("Bitte zuerst einen Text eingeben."))
             return
         source, target = self.source_lang.currentText(), self.target_lang.currentText()
         engine = self._engine()
         # Jede neue Anfrage beginnt mit einem leeren Ergebnisfeld. So bleibt
         # bei einem Fehler niemals die Übersetzung des vorherigen Auftrags stehen.
         self.output_text.clear()
-        self.status.setText("Übersetzung läuft …")
+        self.status.setText(tr("Übersetzung läuft …"))
         self.progress.show()
         def translate_with_fallback():
             # Anbieterwahl ist verbindlich: Bei Auswahl von MyMemory darf
@@ -595,8 +720,8 @@ class MainWindow(QMainWindow):
         self.progress.hide()
         # Fehlerzustand explizit anzeigen und keine alte Ausgabe stehen lassen.
         self.output_text.clear()
-        self.status.setText("Übersetzung fehlgeschlagen")
-        QMessageBox.warning(self, "Übersetzungsfehler", message)
+        self.status.setText(tr("Übersetzung fehlgeschlagen"))
+        QMessageBox.warning(self, tr("Übersetzungsfehler"), message)
 
     def refresh_history(self):
         if not hasattr(self, "history_list"):
@@ -617,7 +742,7 @@ class MainWindow(QMainWindow):
         self.target_lang.setCurrentText(target)
 
     def clear_history(self):
-        answer = QMessageBox.question(self, "Verlauf löschen", "Möchtest du den gesamten Übersetzungsverlauf löschen?")
+        answer = QMessageBox.question(self, tr("Verlauf löschen"), tr("Möchtest du den gesamten Übersetzungsverlauf löschen?"))
         if answer == QMessageBox.Yes:
             self.history.clear()
             self.refresh_history()

@@ -1,4 +1,4 @@
-# LunaTranslator 0.2.17
+# LunaTranslator 0.2.18
 
 LunaTranslator ist eine grafische Übersetzungsanwendung für Debian 13 (Trixie) und ARM64, entwickelt mit Python und Qt 6 / PySide6.
 
@@ -9,7 +9,7 @@ LunaTranslator ist eine grafische Übersetzungsanwendung für Debian 13 (Trixie)
 
 Beide Dienste können in der Anwendung separat ausgewählt werden. Bei Fehlern von MyMemory wird **nicht automatisch auf Google gewechselt**.
 
-![LunaTranslator](lunatranslator1.png)
+![LunaTranslator](lunatranslator.png)
 
 [Github Seite](https://github.com/Angonikro/LunaTranslator/)
 
@@ -30,7 +30,7 @@ Die normale Installation verwendet die von Debian bereitgestellten Python-Pakete
 
 ```bash
 sudo apt update
-sudo apt install ./lunatranslator_0.2.17_all.deb
+sudo apt install ./lunatranslator_0.2.18_all.deb
 ```
 
 Start über das Anwendungsmenü oder im Terminal:
